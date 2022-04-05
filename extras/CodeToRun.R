@@ -1,4 +1,6 @@
 library(redCohort)
+renv::restore()
+
 
 # Maximum number of cores to be used:
 maxCores <- parallel::detectCores() 
