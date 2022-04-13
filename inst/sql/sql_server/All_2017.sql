@@ -4,8 +4,32 @@ CREATE TABLE #Codesets (
 )
 ;
 
+INSERT INTO #Codesets (codeset_id, concept_id)
+SELECT 0 as codeset_id, c.concept_id FROM (select distinct I.concept_id FROM
+( 
+  select concept_id from @vocabulary_database_schema.CONCEPT where concept_id in (9203,9201,9202)
+UNION  select c.concept_id
+  from @vocabulary_database_schema.CONCEPT c
+  join @vocabulary_database_schema.CONCEPT_ANCESTOR ca on c.concept_id = ca.descendant_concept_id
+  and ca.ancestor_concept_id in (9203,9201,9202)
+  and c.invalid_reason is null
+UNION
+select distinct cr.concept_id_1 as concept_id
+FROM
+(
+  select concept_id from @vocabulary_database_schema.CONCEPT where concept_id in (9203,9201,9202)
+UNION  select c.concept_id
+  from @vocabulary_database_schema.CONCEPT c
+  join @vocabulary_database_schema.CONCEPT_ANCESTOR ca on c.concept_id = ca.descendant_concept_id
+  and ca.ancestor_concept_id in (9203,9201,9202)
+  and c.invalid_reason is null
 
+) C
+join @vocabulary_database_schema.concept_relationship cr on C.concept_id = cr.concept_id_2 and cr.relationship_id = 'Maps to' and cr.invalid_reason IS NULL
 
+) I
+) C
+;
 
 with primary_events (event_id, person_id, start_date, end_date, op_start_date, op_end_date, visit_occurrence_id) as
 (
@@ -25,7 +49,7 @@ from
 (
   select vo.* 
   FROM @cdm_database_schema.VISIT_OCCURRENCE vo
-
+JOIN #Codesets codesets on ((vo.visit_concept_id = codesets.concept_id and codesets.codeset_id = 0))
 ) C
 
 WHERE (C.visit_end_date >= DATEFROMPARTS(2017, 1, 1) and C.visit_end_date <= DATEFROMPARTS(2017, 12, 31))
